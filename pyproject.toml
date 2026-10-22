@@ -1,0 +1,75 @@
+[project]
+name = "sivs-tui"
+version = "1.0.0"
+description = "SIVS - Super Intelligence Video Studio (Terminal UI)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Grzegorz", email = "grzegorzskowronski@gmail.com"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Multimedia :: Video",
+]
+
+dependencies = [
+    "textual>=0.70.0",
+    "rich>=13.7.0",
+    "prompt-toolkit>=3.0.43",
+    "pyyaml>=6.0.1",
+    "ffmpeg-python>=0.2.0",
+    "openai>=1.30.0",
+    "python-dotenv>=1.0.0",
+    # "watchdog>=3.0.0",  # Optional - requires Xcode tools
+    "click>=8.1.7",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.3.0",
+    "xxhash>=3.4.1",
+    "humanize>=4.10.0",
+    "pyperclip>=1.8.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+    "pre-commit>=3.6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/grzesiolpl/sivs"
+Repository = "https://github.com/grzesiolpl/sivs"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "W", "UP", "B", "C4", "ARG", "PTH", "ERA", "RET", "SIM", "TID", "TRY", "PD", "PGH"]
+ignore = ["S101", "TRY003"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sivs_tui*"]
+
+[tool.textual]
+dev-command = "python -m sivs_tui --dev"
