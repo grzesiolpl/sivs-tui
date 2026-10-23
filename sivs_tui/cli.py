@@ -10,7 +10,7 @@ from pathlib import Path
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="sivs",
-        description="SIVS - Super Intelligence Video Studio (Terminal UI)",
+        description="SIVS - Terminal UI for video editing",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -20,6 +20,8 @@ Examples:
   sivs --config                 # Show configuration
   sivs --doctor                 # Check system dependencies
   sivs --setup                  # Run first-time setup wizard
+  sivs --help                   # Show full usage guide
+  sivs --web                    # Launch Web UI (Next.js)
         """
     )
     
@@ -65,6 +67,12 @@ Examples:
         action="store_true",
         help="Launch web UI (Next.js) instead of TUI"
     )
+
+    parser.add_argument(
+        "--help-full",
+        action="store_true",
+        help="Show full usage guide"
+    )
     
     return parser
 
@@ -81,7 +89,7 @@ async def run_setup_wizard():
     console = Console()
     
     console.print(Panel.fit(
-        "[bold cyan]🎬 SIVS - Super Intelligence Video Studio[/bold cyan]\n"
+        "[bold cyan]SIVS[/bold cyan]\n"
         "[dim]First-time Setup Wizard[/dim]",
         border_style="cyan"
     ))
@@ -284,6 +292,118 @@ async def run_doctor():
         console.print("  Run [bold]sivs --setup[/bold] to configure it")
 
 
+def show_full_help():
+    """Display full usage guide."""
+    from rich.console import Console
+    from rich.panel import Panel
+    
+    console = Console()
+    
+    guide = """\
+[bold cyan]SIVS[/bold cyan] - Terminal UI for video editing
+[dim]In-place editing, AI-powered plans, multi-target export[/dim]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold]COMMANDS[/bold]
+
+  [cyan]sivs[/cyan]                      Start TUI, select file in UI
+  [cyan]sivs video.mp4[/cyan]            Open video.mp4 directly in TUI
+  [cyan]sivs --setup[/cyan]              First-time configuration wizard
+  [cyan]sivs --doctor[/cyan]             Check system dependencies
+  [cyan]sivs --config[/cyan]             Show current configuration
+  [cyan]sivs --web[/cyan]                Launch Web UI (Next.js) at localhost:3000
+  [cyan]sivs --help[/cyan]               Show this guide
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold]TUI WORKFLOW (6 steps)[/bold]
+
+  [bold]1. LOAD[/bold]      →  [cyan]sivs video.mp4[/cyan] or drag & drop
+       Creates .sivs/ manifest in the video's folder (never touches original)
+
+  [bold]2. BRIEF[/bold]     →  Type in bottom input box, press [bold]Enter[/bold]
+       Examples:
+         "Cut 0:10-0:20, slow-mo 0:30-0:35 at 0.33x"
+         "Remove silence, keep only speaking parts, export for FCP"
+         "Cut intro 0:00-0:15, outro 1:30-end, 9:16 for Reels"
+
+  [bold]3. REVIEW[/bold]    →  Tab [bold]Timeline[/bold] (ASCII) / [bold]Edit Plan[/bold] (table)
+
+  [bold]4. PREVIEW[/bold]   →  Press [bold]P[/bold] = mpv EDL (instant, 0s render!)
+       Level 1: ASCII timeline (instant)
+       Level 2: mpv EDL - plays with cuts, no render (needs mpv)
+       Level 3: ffplay fallback
+
+  [bold]5. EXPORT[/bold]    →  Press [bold]T[/bold] = Timeline (XML/EDL)  |  [bold]R[/bold] = Render video
+       Targets: FCP (.fcpxml) | DaVinci (.fcpxml/.edl) | AE (.xml) | DAW (.wav) | Universal (.mp4)
+       Mode: Timeline (instant) vs Render (video file)
+
+  [bold]6. FIND[/bold]      →  Press [bold]O[/bold] = Open in Finder
+       Files: edit_01_name.mp4, edit_01_name.fcpxml, edit_02_name.mp4...
+       Auto-increments: edit_01_, edit_02_, edit_03_...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold]TUI KEY BINDINGS[/bold]
+
+  [bold]P[/bold]  ▶ Live Preview (mpv EDL)          [bold]B[/bold]  💬 Refine Brief / AI re-plan
+  [bold]E[/bold]  ✏️ Edit Plan JSON ($EDITOR)        [bold]R[/bold]  🚀 Render Output
+  [bold]T[/bold]  🎞️ Export Timeline (XML/EDL)       [bold]O[/bold]  📂 Show in Finder
+  [bold]W[/bold]  🌐 Launch Web UI (Next.js)         [bold]Q[/bold]  ❌ Quit
+  [bold]Ctrl+Z[/bold]  ↶ Undo                       [bold]Ctrl+Shift+Z[/bold]  ↷ Redo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold]IN-PLACE EDITING[/bold]
+
+  • Original file is NEVER modified (READ ONLY)
+  • Metadata in .sivs/ folder next to your video
+  • Outputs saved in SAME folder: edit_01_name.mp4, edit_01_name.fcpxml...
+  • History: .sivs/edit_plan_01.json, edit_plan_02.json... (undo/ready)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold]EXPORT TARGETS[/bold]
+
+  [bold]FCP[/bold]         .fcpxml (v1.9/1.10)          | Render: .mov ProRes 422 LT / H.264 CFR
+  [bold]DaVinci[/bold]     .fcpxml + .edl (CMX 3600)    | Render: .mov ProRes 422 LT / DNxHR SQ
+  [bold]After Effects[/bold] _fcp7.xml (xmeml)          | Render: .mov H.264 All-Intra / ProRes
+  [bold]DAW Audio[/bold]   .edl (audio cuts)            | Render: .wav Broadcast WAV 24-bit 48kHz
+  [bold]Universal[/bold]   —                            | Render: .mp4 H.264 CRF 20 (Social)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold]WEB UI[/bold]
+
+  [cyan]sivs --web[/cyan]  or press [bold]W[/bold] in TUI
+  Opens http://localhost:3000 — visual timeline editor, same .sivs/ project data
+  DevTimer in bottom-right shows server uptime (green/yellow/red = timeout warning)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold]FIRST TIME SETUP[/bold]
+
+  [cyan]sivs --setup[/cyan]  →  Interactive wizard:
+    1. System check (ffmpeg, mpv, ffplay, qlmanage)
+    2. OpenRouter API key (get at https://openrouter.ai/keys)
+    3. Model selection (Claude 3.5 Sonnet / GPT-4o-mini / Haiku)
+    4. Workspace directory
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold]REPOS[/bold]
+
+  TUI:     https://github.com/grzesiolpl/sivs-tui
+  Web UI:  https://github.com/grzesiolpl/sivs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+    
+    console.print(Panel(guide, title="[bold]SIVS — Full Guide[/bold]", border_style="cyan", expand=False))
+    return 0
+
+
 def launch_web_ui():
     """Launch the SIVS Web UI (Next.js)."""
     import subprocess
@@ -349,6 +469,10 @@ def launch_web_ui():
 def main():
     parser = create_parser()
     args = parser.parse_args()
+    
+    if args.help_full:
+        show_full_help()
+        return 0
     
     if args.config:
         show_config()

@@ -47,65 +47,29 @@ class ProjectContext:
 
 
 class WelcomeWidget(Static):
-    """Welcome screen with workflow guide when no file is loaded."""
+    """Welcome screen - minimal, shows help hint."""
     
     def render(self) -> str:
-        return """
-[bold cyan]🎬 SIVS - Super Intelligence Video Studio[/bold cyan]
-[dim]Super Intelligence Video Studio - Terminal UI[/dim]
+        return """\
+[bold cyan]SIVS[/bold cyan]
+[dim]Terminal UI for video editing[/dim]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[bold yellow]🚀 Quick Start:[/bold yellow]
+[bold]Quick Start:[/bold]
 
-  [bold]1. Load a video[/bold]
-     • Drag & drop a video file onto this terminal window
-     • Or run: [cyan]sivs video.mp4[/cyan] from command line
-     • Or press [bold]Ctrl+O[/bold] to open file dialog (coming soon)
+  [bold]1. Load[/bold]  →  [cyan]sivs video.mp4[/cyan]  or drag & drop
+  [bold]2. Brief[/bold] →  Type in bottom box, press [bold]Enter[/bold]
+  [bold]3. Review[/bold] →  Tab [bold]Timeline[/bold] / [bold]Edit Plan[/bold]
+  [bold]4. Preview[/bold] →  [bold]P[/bold] = mpv EDL (instant!)
+  [bold]5. Export[/bold]  →  [bold]T[/bold] = XML/EDL  |  [bold]R[/bold] = render
+  [bold]6. Find[/bold]    →  [bold]O[/bold] = Finder → edit_01_name.ext
 
-  [bold]2. Enter your brief[/bold] (bottom-left input box)
-     [dim]Examples:[/dim]
-     • [green]"Cut 0:10-0:20, slow-mo 0:30-0:35 at 0.33x"[/green]
-     • [green]"Remove silence, keep only speaking parts, export for FCP"[/green]
-     • [green]"Cut intro 0:00-0:15, outro 1:30-end, 9:16 for Reels"[/green]
-     Press [bold]Enter[/bold] to generate AI edit plan
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  [bold]3. Review the plan[/bold] (Timeline tab → / Edit Plan tab →)
-     • [bold]Timeline[/bold] - ASCII visualization of cuts
-     • [bold]Edit Plan[/bold] - Table of all operations
-     • [bold]QC Reports[/bold] - Quality checks after render
+[bold]Keys:[/bold]  [bold]P[/bold] Preview  [bold]B[/bold] Brief  [bold]E[/bold] Edit Plan  [bold]R[/bold] Render  [bold]T[/bold] Export  [bold]O[/bold] Finder  [bold]W[/bold] Web UI  [bold]Q[/bold] Quit
 
-  [bold]4. Preview before render[/bold] [bold]P[/bold] / [bold]▶ Preview[/bold]
-     • Level 2: [bold]mpv EDL[/bold] - Instant playback with cuts (0s render!)
-     • Level 3: [bold]ffplay[/bold] - Fallback if mpv not installed
-
-  [bold]5. Export / Render[/bold]
-     • [bold]T[/bold] / [bold]🎞️ Export[/bold] - Timeline (XML/EDL) for NLE
-     • [bold]R[/bold] / [bold]🚀 Render[/bold] - Render video file
-     • Select target in bottom-left: [bold]FCP / DaVinci / AE / DAW / Universal[/bold]
-     • Select mode: [bold]Timeline[/bold] (instant) vs [bold]Render[/bold] (video file)
-
-  [bold]6. Find your output[/bold] [bold]O[/bold] / [bold]📂 Finder[/bold]
-     • Files saved as: [green]edit_01_filename.mp4[/green], [green]edit_01_filename.fcpxml[/green], etc.
-     • Auto-increment: edit_01_, edit_02_, edit_03_...
-     • Original file NEVER modified
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[bold yellow]⌨️  Key Bindings:[/bold yellow]
-  [bold]P[/bold] ▶ Live Preview (mpv EDL)     [bold]B[/bold] 💬 Refine Brief / AI Edit
-  [bold]E[/bold] ✏️ Edit Plan JSON ($EDITOR)   [bold]R[/bold] 🚀 Render Output
-  [bold]T[/bold] 🎞️ Export Timeline (XML/EDL)   [bold]O[/bold] 📂 Show in Finder
-  [bold]Q[/bold] ❌ Quit                      [bold]Ctrl+Z[/bold] ↶ Undo
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[dim]💡 Tip: Run [cyan]sivs --setup[/cyan] for first-time configuration (API key, model, workspace)
-[dim]💡 Tip: Run [cyan]sivs --doctor[/cyan] to check system dependencies (ffmpeg, mpv, etc.)
-[dim]💡 Tip: Get OpenRouter API key at [link]https://openrouter.ai/keys[/link] for AI features
-[dim]💡 Tip: Run [cyan]sivs --web[/cyan] or press [bold]W[/bold] in TUI to launch Web UI (Next.js)
-[dim]💡 Tip: Web UI at [link]http://localhost:3000[/link] — visual timeline editor, same project data
-"""
+[dim]Run [cyan]sivs --help[/cyan] for full guide  •  [cyan]sivs --setup[/cyan] for first-time config  •  [cyan]sivs --doctor[/cyan] for system check"""
 
 
 class TimelineWidget(Static):
