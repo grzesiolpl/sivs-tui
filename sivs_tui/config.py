@@ -2,10 +2,14 @@
 SIVS-TUI - Core configuration and settings management.
 """
 import os
+import json
 from pathlib import Path
 from typing import Optional, List
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+CONFIG_FILE = Path.home() / ".config" / "sivs" / "settings.json"
 
 
 class SIVSSettings(BaseSettings):
@@ -82,7 +86,52 @@ class SIVSSettings(BaseSettings):
                 return templates
         import sivs_tui
         return Path(sivs_tui.__file__).parent / "resources" / "templates"
+    
+    def save(self) -> None:
+        """Save settings to JSON config file."""
+        CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        # Only save user-modifiable settings
+        data = {
+            "workspace_dir": str(self.workspace_dir),
+            "config_dir": str(self.config_dir),
+            "cache_dir": str(self.cache_dir),
+            "ffmpeg_path": self.ffmpeg_path,
+            "ffprobe_path": self.ffprobe_path,
+            "mpv_path": self.mpv_path,
+            "ffplay_path": self.ffplay_path,
+            "qlmanage_path": self.qlmanage_path,
+            "davinci_path": self.davinci_path,
+            "openrouter_api_key": self.openrouter_api_key,
+            "openrouter_base_url": self.openrouter_base_url,
+            "default_model": self.default_model,
+            "cheap_model": self.cheap_model,
+            "default_framerate": self.default_framerate,
+            "default_resolution": self.default_resolution,
+            "default_video_codec": self.default_video_codec,
+            "default_audio_codec": self.default_audio_codec,
+            "default_crf": self.default_crf,
+            "default_preset": self.default_preset,
+            "preview_geometry": self.preview_geometry,
+            "preview_ontop": self.preview_ontop,
+            "enabled_targets": self.enabled_targets,
+            "theme": self.theme,
+            "show_ascii_timeline": self.show_ascii_timeline,
+            "max_timeline_width": self.max_timeline_width,
+        }
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
 
 
 # Global settings instance
 settings = SIVSSettings()
+
+# Load saved config if exists
+if CONFIG_FILE.exists():
+    try:
+        with open(CONFIG_FILE) as f:
+            saved = json.load(f)
+        for key, value in saved.items():
+            if hasattr(settings, key):
+                setattr(settings, key, value)
+    except Exception:
+        pass  # Ignore corrupt config

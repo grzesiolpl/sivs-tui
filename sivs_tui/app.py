@@ -46,6 +46,66 @@ class ProjectContext:
     edit_number: int = 1
 
 
+class WelcomeWidget(Static):
+    """Welcome screen with workflow guide when no file is loaded."""
+    
+    def render(self) -> str:
+        return """
+[bold cyan]🎬 SIVS - Super Intelligence Video Studio[/bold cyan]
+[dim]Super Intelligence Video Studio - Terminal UI[/dim]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold yellow]🚀 Quick Start:[/bold yellow]
+
+  [bold]1. Load a video[/bold]
+     • Drag & drop a video file onto this terminal window
+     • Or run: [cyan]sivs video.mp4[/cyan] from command line
+     • Or press [bold]Ctrl+O[/bold] to open file dialog (coming soon)
+
+  [bold]2. Enter your brief[/bold] (bottom-left input box)
+     [dim]Examples:[/dim]
+     • [green]"Cut 0:10-0:20, slow-mo 0:30-0:35 at 0.33x"[/green]
+     • [green]"Remove silence, keep only speaking parts, export for FCP"[/green]
+     • [green]"Cut intro 0:00-0:15, outro 1:30-end, 9:16 for Reels"[/green]
+     Press [bold]Enter[/bold] to generate AI edit plan
+
+  [bold]3. Review the plan[/bold] (Timeline tab → / Edit Plan tab →)
+     • [bold]Timeline[/bold] - ASCII visualization of cuts
+     • [bold]Edit Plan[/bold] - Table of all operations
+     • [bold]QC Reports[/bold] - Quality checks after render
+
+  [bold]4. Preview before render[/bold] [bold]P[/bold] / [bold]▶ Preview[/bold]
+     • Level 2: [bold]mpv EDL[/bold] - Instant playback with cuts (0s render!)
+     • Level 3: [bold]ffplay[/bold] - Fallback if mpv not installed
+
+  [bold]5. Export / Render[/bold]
+     • [bold]T[/bold] / [bold]🎞️ Export[/bold] - Timeline (XML/EDL) for NLE
+     • [bold]R[/bold] / [bold]🚀 Render[/bold] - Render video file
+     • Select target in bottom-left: [bold]FCP / DaVinci / AE / DAW / Universal[/bold]
+     • Select mode: [bold]Timeline[/bold] (instant) vs [bold]Render[/bold] (video file)
+
+  [bold]6. Find your output[/bold] [bold]O[/bold] / [bold]📂 Finder[/bold]
+     • Files saved as: [green]edit_01_filename.mp4[/green], [green]edit_01_filename.fcpxml[/green], etc.
+     • Auto-increment: edit_01_, edit_02_, edit_03_...
+     • Original file NEVER modified
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[bold yellow]⌨️  Key Bindings:[/bold yellow]
+  [bold]P[/bold] ▶ Live Preview (mpv EDL)     [bold]B[/bold] 💬 Refine Brief / AI Edit
+  [bold]E[/bold] ✏️ Edit Plan JSON ($EDITOR)   [bold]R[/bold] 🚀 Render Output
+  [bold]T[/bold] 🎞️ Export Timeline (XML/EDL)   [bold]O[/bold] 📂 Show in Finder
+  [bold]Q[/bold] ❌ Quit                      [bold]Ctrl+Z[/bold] ↶ Undo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[dim]💡 Tip: Run [cyan]sivs --setup[/cyan] for first-time configuration (API key, model, workspace)
+[dim]💡 Tip: Run [cyan]sivs --doctor[/cyan] to check system dependencies (ffmpeg, mpv, etc.)
+[dim]💡 Tip: Get OpenRouter API key at [link]https://openrouter.ai/keys[/link] for AI features
+"""
+
+
 class TimelineWidget(Static):
     """Widget for displaying ASCII timeline visualization."""
     
@@ -297,6 +357,7 @@ class SIVSApp(App):
         with Horizontal(id="main_container"):
             # Left panel - Media info, Brief, Export config
             with Vertical(id="left_panel"):
+                yield WelcomeWidget(id="welcome_widget")
                 yield MediaInfoWidget(id="media_info")
                 yield Static("", classes="info_box", id="silence_info")
                 yield BriefInputWidget(id="brief_widget")
@@ -325,7 +386,7 @@ class SIVSApp(App):
         yield Static("", id="status_bar")
         yield Footer()
     
-    async def on_mount(self) -> None:
+    def on_mount(self) -> None:
         """Initialize the app."""
         self.query_one("#plan_table", DataTable).add_columns(
             "#", "Operation", "File", "Start", "End", "Duration", "Speed", "Description"
@@ -334,25 +395,35 @@ class SIVSApp(App):
             "Stage", "Passed", "Checks", "Issues", "Time"
         )
         
+        # Initially hide media-related widgets
+        self.query_one("#media_info", MediaInfoWidget).display = False
+        self.query_one("#silence_info", Static).display = False
+        self.query_one("#brief_widget", BriefInputWidget).display = False
+        self.query_one("#export_config", ExportConfigWidget).display = False
+        self.query_one("#key_bindings", KeyBindingsWidget).display = False
+        self.query_one("#timeline_widget", Static).display = False
+        self.query_one("#plan_table", DataTable).display = False
+        self.query_one("#qc_table", DataTable).display = False
+        
         # Load initial file if provided
         if self.input_file:
-            await self.load_file(self.input_file)
+            self.call_later(self.load_file, self.input_file)
         else:
-            self.update_status("Welcome to SIVS! Drag a video file here or use the CLI.")
+            self.update_status("Welcome to SIVS! Drag a video file here or run: sivs video.mp4")
     
     async def load_file(self, file_path: Path) -> None:
         """Load a media file and initialize the project."""
         try:
             self.update_status(f"Analyzing {file_path.name}...")
             
-            # Analyze media
+            # Analyze media - use lambda to ensure path is passed correctly
             media_file = await self.run_worker(
-                self.analyzer.analyze, file_path, thread=True
+                lambda: self.analyzer.analyze(file_path), thread=True
             )
             
             # Detect silence
             silence_segments = await self.run_worker(
-                self.silence_detector.detect, file_path, thread=True
+                lambda: self.silence_detector.detect(file_path), thread=True
             )
             
             # Determine manifest directory
@@ -370,6 +441,17 @@ class SIVSApp(App):
                 edit_number=1,  # Will be updated
             )
             
+            # Switch UI: hide welcome, show media widgets
+            self.query_one("#welcome_widget", WelcomeWidget).display = False
+            self.query_one("#media_info", MediaInfoWidget).display = True
+            self.query_one("#silence_info", Static).display = True
+            self.query_one("#brief_widget", BriefInputWidget).display = True
+            self.query_one("#export_config", ExportConfigWidget).display = True
+            self.query_one("#key_bindings", KeyBindingsWidget).display = True
+            self.query_one("#timeline_widget", Static).display = True
+            self.query_one("#plan_table", DataTable).display = True
+            self.query_one("#qc_table", DataTable).display = True
+            
             # Update UI
             self.query_one("#media_info", MediaInfoWidget).update_media(media_file)
             self.update_timeline_display()
@@ -377,6 +459,7 @@ class SIVSApp(App):
             self.update_silence_info(silence_segments)
             
             self.update_status(f"Loaded {file_path.name} ({media_file.formatted_duration})")
+            self.notify(f"Loaded {file_path.name}")
             
             # Auto-generate initial plan if we have a brief
             # (would need brief first)

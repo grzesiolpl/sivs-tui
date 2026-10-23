@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 sivs_tui/__init__.py
+sivs_tui/__main__.py
 sivs_tui/app.py
 sivs_tui/cli.py
 sivs_tui/config.py
@@ -13,6 +14,8 @@ sivs_tui.egg-info/top_level.txt
 sivs_tui/core/__init__.py
 sivs_tui/core/analyzer.py
 sivs_tui/exporters/__init__.py
+sivs_tui/exporters/exporters.py
 sivs_tui/preview/__init__.py
+sivs_tui/preview/preview.py
 sivs_tui/utils/__init__.py
 sivs_tui/utils/ai_brief.py
