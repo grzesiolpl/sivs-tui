@@ -262,11 +262,14 @@ class SIVSApp(App):
         min-width: 50;
         border-right: solid $primary;
         padding: 1;
+        height: 100%;
+        overflow-y: auto;
     }
 
     #right_panel {
         width: 60%;
         padding: 1;
+        height: 100%;
     }
 
     #timeline_widget {
@@ -315,6 +318,10 @@ class SIVSApp(App):
         height: 1fr;
     }
 
+    TabPane {
+        height: 1fr;
+    }
+
     .plan_table {
         height: 1fr;
     }
@@ -336,6 +343,11 @@ class SIVSApp(App):
 
     /* Edit Plan Editor */
     #plan_editor_text {
+        height: 1fr;
+    }
+    
+    /* Ensure QC table fills its tab */
+    #qc_table {
         height: 1fr;
     }
     """
@@ -406,6 +418,12 @@ class SIVSApp(App):
                     yield Button("📂 Finder [O]", id="btn_finder", variant="default")
                     yield Button("🌐 Web UI [W]", id="btn_web", variant="default")
 
+                # Main input for file paths (when no file) or brief (when file loaded)
+                yield Input(
+                    placeholder="Drag & drop video file here, or paste path, or type brief and press Enter...",
+                    id="main_input",
+                )
+
         yield Static("", id="status_bar")
         yield Footer()
 
@@ -443,6 +461,55 @@ class SIVSApp(App):
                     self.notify(f"📁 Loading: {path.name}", severity="information")
                     return
             self.notify("No valid video file dropped. Supported: mp4, mov, mkv, avi, m4v, mpg, webm, mts, m2ts", severity="warning")
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle main input submission - file path or brief."""
+        if event.input.id != "main_input":
+            return
+        
+        value = event.value.strip()
+        if not value:
+            return
+        
+        # Clean up path from macOS drag & drop (remove quotes and backslashes)
+        cleaned = value.strip('"\'').replace("\\ ", " ").replace("\\", "")
+        
+        # Check if it's a file path
+        path = Path(cleaned).expanduser()
+        if path.exists() and path.suffix.lower() in ('.mp4', '.mov', '.mkv', '.avi', '.m4v', '.mpg', '.mpeg', '.webm', '.mts', '.m2ts'):
+            self.call_later(self.load_file, path)
+            self.update_status(f"Loading {path.name}...")
+            self.notify(f"📁 Loading: {path.name}", severity="information")
+            # Clear input after loading
+            event.input.value = ""
+        elif self.project_context and self.project_context.edit_plan is not None:
+            # Treat as brief - generate edit plan
+            self.current_brief = value
+            self.update_status("Generating edit plan with AI...")
+            self.call_later(self._generate_plan_from_brief, value)
+            event.input.value = ""
+        else:
+            self.notify("No video loaded. Drag a file or paste a valid path first.", severity="warning")
+
+    async def _generate_plan_from_brief(self, brief: str) -> None:
+        """Generate edit plan from brief using AI."""
+        try:
+            from sivs_tui.utils.ai_brief import generate_edit_plan
+            plan = await self.run_worker(
+                generate_edit_plan,
+                brief,
+                [self.project_context.media_file],
+                thread=True
+            )
+            self.project_context.edit_plan = plan
+            self.update_timeline_display()
+            self.update_plan_display()
+            self._update_plan_management_buttons()
+            self.update_status("Edit plan generated!")
+            self.notify("Edit plan generated!")
+        except Exception as e:
+            self.notify(f"AI generation failed: {e}", severity="error")
+            self.update_status(f"AI error: {e}")
 
     async def load_file(self, file_path: Path) -> None:
         """Load a media file and initialize the project."""

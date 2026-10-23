@@ -1,3 +1,3 @@
-from .preview import (PreviewManager, ASCIITimelineRenderer, MPVEDLPreview, FFplayPreview, QuickLookPreview)
+from .preview import (PreviewManager, ASCIITimelineRenderer, FFplayPreview, QuickLookPreview)
 
-__all__ = ["PreviewManager", "ASCIITimelineRenderer", "MPVEDLPreview", "FFplayPreview", "QuickLookPreview"]
+__all__ = ["PreviewManager", "ASCIITimelineRenderer", "FFplayPreview", "QuickLookPreview"]
