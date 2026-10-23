@@ -1,39 +1,30 @@
 #!/usr/bin/env python3
 """
 SIVS - Super Intelligence Video Studio (Terminal UI)
-Entry point wrapper that calls the CLI module.
+Global entry point - uses TUI code from Obsidian (source of truth)
+and venv from SIVS-TUI installation.
 """
 import sys
 import os
 
-# Resolve the actual script path (follow symlinks)
-REAL_SCRIPT = os.path.realpath(__file__)
-SIVS_DIR = os.path.dirname(REAL_SCRIPT)
-VENV_PYTHON = os.path.join(SIVS_DIR, ".venv", "bin", "python")
+# TUI source code location (Obsidian - source of truth)
+TUI_SOURCE_DIR = "/Users/mac/Documents/Obsidian Vault/Projects/AI-Video-Studio/tui"
 
-# Debug
-print(f"DEBUG: REAL_SCRIPT={REAL_SCRIPT}", file=sys.stderr)
-print(f"DEBUG: SIVS_DIR={SIVS_DIR}", file=sys.stderr)
-print(f"DEBUG: VENV_PYTHON={VENV_PYTHON}", file=sys.stderr)
-print(f"DEBUG: VENV_EXISTS={os.path.exists(VENV_PYTHON)}", file=sys.stderr)
-print(f"DEBUG: sys.executable={sys.executable}", file=sys.stderr)
+# Virtual environment location (from SIVS-TUI installation)
+VENV_DIR = "/Users/mac/SIVS-TUI/.venv"
+VENV_PYTHON = os.path.join(VENV_DIR, "bin", "python")
 
-# If virtual environment exists, re-execute with the venv Python BEFORE any imports
-if os.path.exists(VENV_PYTHON):
-    if sys.executable != VENV_PYTHON:
-        print(f"DEBUG: Calling execv to {VENV_PYTHON}", file=sys.stderr)
-        try:
-            os.execv(VENV_PYTHON, [VENV_PYTHON, REAL_SCRIPT] + sys.argv[1:])
-        except Exception as e:
-            print(f"DEBUG: execv failed: {e}", file=sys.stderr)
-    else:
-        print(f"DEBUG: Already using venv Python", file=sys.stderr)
+# Re-execute with venv Python if needed
+if os.path.exists(VENV_PYTHON) and sys.executable != VENV_PYTHON:
+    try:
+        os.execv(VENV_PYTHON, [VENV_PYTHON, __file__] + sys.argv[1:])
+    except Exception:
+        pass
 
-print(f"DEBUG: Using Python {sys.executable}", file=sys.stderr)
+# Add TUI source to path
+sys.path.insert(0, TUI_SOURCE_DIR)
 
-# Add the sivs_tui package to path
-sys.path.insert(0, SIVS_DIR)
-
+# Import and run CLI
 from sivs_tui.cli import main
 
 if __name__ == "__main__":

@@ -3,10 +3,27 @@ SIVS-TUI - Core configuration and settings management.
 """
 import os
 import json
+import shutil
 from pathlib import Path
 from typing import Optional, List
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _find_tool(name: str) -> str:
+    """Find tool in common Homebrew locations."""
+    # Check common Homebrew paths
+    homebrew_paths = [
+        "/opt/homebrew/bin",      # Apple Silicon
+        "/usr/local/bin",         # Intel
+        "/home/linuxbrew/.linuxbrew/bin",  # Linuxbrew
+    ]
+    for base in homebrew_paths:
+        path = Path(base) / name
+        if path.exists():
+            return str(path)
+    # Fallback to just the name (will use system PATH)
+    return name
 
 
 CONFIG_FILE = Path.home() / ".config" / "sivs" / "settings.json"
@@ -28,10 +45,10 @@ class SIVSSettings(BaseSettings):
     cache_dir: Path = Field(default_factory=lambda: Path.home() / ".cache" / "sivs")
     
     # External tools (auto-detected if not set)
-    ffmpeg_path: str = "ffmpeg"
-    ffprobe_path: str = "ffprobe"
-    mpv_path: str = "mpv"
-    ffplay_path: str = "ffplay"
+    ffmpeg_path: str = "/usr/local/bin/ffmpeg"
+    ffprobe_path: str = "/usr/local/bin/ffprobe"
+    mpv_path: str = "/usr/local/bin/mpv"
+    ffplay_path: str = "/usr/local/bin/ffplay"
     qlmanage_path: str = "qlmanage"
     davinci_path: Optional[str] = None
     
