@@ -59,6 +59,12 @@ Examples:
         action="store_true",
         help="Run first-time setup wizard"
     )
+
+    parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Launch web UI (Next.js) instead of TUI"
+    )
     
     return parser
 
@@ -278,6 +284,68 @@ async def run_doctor():
         console.print("  Run [bold]sivs --setup[/bold] to configure it")
 
 
+def launch_web_ui():
+    """Launch the SIVS Web UI (Next.js)."""
+    import subprocess
+    import os
+    from pathlib import Path
+    
+    # Try to find the web UI directory
+    possible_paths = [
+        Path.home() / "AI-Video-Studio-UI",
+        Path("/Users/mac/AI-Video-Studio-UI"),
+        Path.cwd() / "AI-Video-Studio-UI",
+        Path(__file__).parent.parent / "AI-Video-Studio-UI",
+    ]
+    
+    web_ui_dir = None
+    for p in possible_paths:
+        if (p / "package.json").exists():
+            web_ui_dir = p
+            break
+    
+    if not web_ui_dir:
+        print("Error: SIVS Web UI not found.", file=sys.stderr)
+        print("Expected at ~/AI-Video-Studio-UI or /Users/mac/AI-Video-Studio-UI", file=sys.stderr)
+        print("Clone from: https://github.com/grzesiolpl/sivs", file=sys.stderr)
+        return 1
+    
+    print(f"🌐 Starting SIVS Web UI from {web_ui_dir}...")
+    print("   Opening http://localhost:3000 in your browser...")
+    
+    # Check if node_modules exists
+    if not (web_ui_dir / "node_modules").exists():
+        print("   Installing dependencies (first run)...")
+        subprocess.run(["npm", "install"], cwd=web_ui_dir, check=True)
+    
+    # Start the dev server
+    try:
+        # Open browser after a short delay
+        import threading
+        import time
+        import webbrowser
+        
+        def open_browser():
+            time.sleep(3)
+            webbrowser.open("http://localhost:3000")
+        
+        threading.Thread(target=open_browser, daemon=True).start()
+        
+        # Run next dev server
+        subprocess.run(["npm", "run", "dev"], cwd=web_ui_dir, check=True)
+    except KeyboardInterrupt:
+        print("\n👋 Web UI stopped")
+        return 0
+    except subprocess.CalledProcessError as e:
+        print(f"Error starting web UI: {e}", file=sys.stderr)
+        return 1
+    except FileNotFoundError:
+        print("Error: npm not found. Install Node.js first.", file=sys.stderr)
+        return 1
+    
+    return 0
+
+
 def main():
     parser = create_parser()
     args = parser.parse_args()
@@ -295,6 +363,9 @@ def main():
         import asyncio
         asyncio.run(run_setup_wizard())
         return 0
+    
+    if args.web:
+        return launch_web_ui()
     
     input_file = None
     if args.input_file:

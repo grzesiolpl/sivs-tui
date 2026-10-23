@@ -103,6 +103,8 @@ class WelcomeWidget(Static):
 [dim]💡 Tip: Run [cyan]sivs --setup[/cyan] for first-time configuration (API key, model, workspace)
 [dim]💡 Tip: Run [cyan]sivs --doctor[/cyan] to check system dependencies (ffmpeg, mpv, etc.)
 [dim]💡 Tip: Get OpenRouter API key at [link]https://openrouter.ai/keys[/link] for AI features
+[dim]💡 Tip: Run [cyan]sivs --web[/cyan] or press [bold]W[/bold] in TUI to launch Web UI (Next.js)
+[dim]💡 Tip: Web UI at [link]http://localhost:3000[/link] — visual timeline editor, same project data
 """
 
 
@@ -330,6 +332,7 @@ class SIVSApp(App):
         Binding("r", "render", "🚀 Render"),
         Binding("t", "export_timeline", "🎞️ Export"),
         Binding("o", "open_finder", "📂 Finder"),
+        Binding("w", "launch_web", "🌐 Web UI"),
         Binding("q", "quit", "❌ Quit"),
         Binding("ctrl+z", "undo", "↶ Undo"),
         Binding("ctrl+shift+z", "redo", "↷ Redo"),
@@ -382,6 +385,7 @@ class SIVSApp(App):
                     yield Button("🚀 Render [R]", id="btn_render", variant="success")
                     yield Button("🎞️ Export [T]", id="btn_export", variant="default")
                     yield Button("📂 Finder [O]", id="btn_finder", variant="default")
+                    yield Button("🌐 Web UI [W]", id="btn_web", variant="default")
         
         yield Static("", id="status_bar")
         yield Footer()
@@ -689,9 +693,54 @@ class SIVSApp(App):
             "btn_render": self.action_render,
             "btn_export": self.action_export_timeline,
             "btn_finder": self.action_open_finder,
+            "btn_web": self.action_launch_web,
         }
         if button_id in actions:
             self.call_later(actions[button_id])
+
+    async def action_launch_web(self) -> None:
+        """Launch the web UI (Next.js)."""
+        import subprocess
+        import threading
+        import time
+        import webbrowser
+        from pathlib import Path
+        
+        # Try to find the web UI directory
+        possible_paths = [
+            Path.home() / "AI-Video-Studio-UI",
+            Path("/Users/mac/AI-Video-Studio-UI"),
+            Path.cwd() / "AI-Video-Studio-UI",
+            Path(__file__).parent.parent / "AI-Video-Studio-UI",
+        ]
+        
+        web_ui_dir = None
+        for p in possible_paths:
+            if (p / "package.json").exists():
+                web_ui_dir = p
+                break
+        
+        if not web_ui_dir:
+            self.notify("Web UI not found. Run 'sivs --web' from terminal.", severity="error")
+            return
+        
+        self.update_status(f"Starting Web UI from {web_ui_dir}...")
+        self.notify("Launching Web UI at http://localhost:3000...")
+        
+        def run_web():
+            try:
+                # Open browser after delay
+                time.sleep(3)
+                webbrowser.open("http://localhost:3000")
+                
+                # Run npm dev
+                subprocess.run(["npm", "run", "dev"], cwd=web_ui_dir, check=True)
+            except Exception as e:
+                self.call_from_thread(
+                    self.notify, f"Web UI error: {e}", severity="error"
+                )
+        
+        threading.Thread(target=run_web, daemon=True).start()
     
     async def on_key(self, event: events.Key) -> None:
         """Handle key events."""
