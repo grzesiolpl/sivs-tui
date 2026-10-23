@@ -267,7 +267,7 @@ async def run_doctor():
         ("qlmanage", "qlmanage", ["-h"]),
         ("python", sys.executable, ["--version"]),
         ("textual", "python", ["-c", "import textual; print(textual.__version__)"]),
-        ("rich", "python", ["-c", "import rich; print(rich.__version__)"]),
+        ("rich", "python", ["-c", "import rich; print(rich.__version__ if hasattr(rich, '__version__') else 'installed')"]),
     ]
     
     for name, cmd, args in checks:
